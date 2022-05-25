@@ -3,3 +3,7 @@ __pycache__
 data
 output
 logs
+local-jobscript
+localVenv
+ram-jobscript
+jobscript
