@@ -132,34 +132,6 @@ def setup(args):
     )
 
 
-def max_px(box, targ):                                                          
-    m = np.zeros_like(targ)                                                     
-    y,x,h,w = box                                                               
-    m[:, x:x+w,y:y+h] = 1                                                       
-    ind = np.unravel_index(np.argmax(targ*m, axis=None), targ.shape)            
-
-    return ind                                                                  
-                                                                                
-                                                                                
-def extract_predictions(lbl, pred, score_thresh=0.1, min_area=4):               
-    pscore = (pred > score_thresh).astype(np.uint8)                             
-    contours,hierarchy = cv2.findContours(pscore.max(0).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    pboxes = [cv2.boundingRect(cnt) for cnt in contours if cv2.contourArea(cnt) >= min_area]
-    pred_points = [max_px(pbox, pred) for pbox in pboxes]                       
-                                                                                
-    lbl_points = list(zip(*(lbl==1.0).nonzero()))                               
-                                                                                
-    return pred_points, lbl_points                                              
-                                                                                
-                                                                                
-def classes2name(points, classes):                                              
-    res = [0] * len(classes)                                                    
-    for i in points:                                                            
-        res[i[0]] += 1                                                          
-
-    return res 
-
-
 def cleanup():
     """Destroys process group"""
     dist.destroy_process_group()

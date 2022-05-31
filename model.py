@@ -74,7 +74,7 @@ def get_model(dls, dist):
         loss_func = loss_func,
         pretrained = True
     )
-
+    
     if dist.rank == 0:
         logging.info('Got pretrained model')
 

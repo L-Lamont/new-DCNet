@@ -13,9 +13,10 @@ import torch
 import numpy as np
 import time
 
-from utils import setup, max_px, extract_predictions, classes2name, cleanup
+from utils import setup, cleanup
 from data import get_dataloader, load_labels
 from model import get_model, FocalLoss
+from visualise import save_predictions
 
 
 def parse_args():
@@ -53,6 +54,13 @@ def parse_args():
             '--dist',
             type=int,
             help='Set the distribution type',
+            default=0
+    )
+    add_arg(
+            '--images',
+            type=int,
+            choices=[0, 1],
+            help='Output images or not',
             default=0
     )
 
@@ -177,8 +185,6 @@ def main():
 
     learn.load(os.path.join(args.data, 'Model/3g_latest_mean_IVTs'))
 
-    min_area = 4
-
     # Evaluation on holdout dataset
     ho_dls = get_dataloader(args, dist, 'Model/holdout.pkl', holdout=True)
     holdout_lbls = load_labels(args, dist)
@@ -190,27 +196,14 @@ def main():
     lbls = lbls.detach().cpu().numpy()
     ho_out = ho_dls.decode_batch((inps, lbls), max_n=len(holdout_lbls))  
 
-    ho_results = []   
-    for idx in range(len(holdout_lbls[:])):
-        inp, _ = ho_out[idx]
-        pred, lbl = preds[idx], lbls[idx]
-        pred_points, lbl_points = extract_predictions(lbl, pred, score_thresh=0.1, min_area=4)
-        
-        target = classes2name(lbl_points, classes)
-        prediction = classes2name(pred_points, classes)
-        
-        fname = holdout_lbls[idx]['External ID']
-        # for creating dataframes for the holdout dataset
-        row = target + prediction
-        row.append(fname)
-        ho_results.append(row)
-
+    if args.images == 1 and dist.rank == 0:
+        save_predictions(args, classes, inps, preds, lbls, ho_out, holdout_lbls)
          
     end = time.time()
 
     cleanup()
 
-    logging.info('time to predict {} tiles: {} seconds'.format((idx+1), (end-start)))
+    logging.info('time to predict {} tiles: {} seconds'.format((len(holdout_lbls)), (end-start)))
 
 if __name__ == '__main__':
     main()
