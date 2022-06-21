@@ -60,8 +60,6 @@ def get_dataset(args, dist, image_path, holdout):
         )
     else:
         idxs = range(len(load_labels(args, dist)))
-        logging.info('changed it')
-        logging.info('idxs: {}'.format(idxs))
     
         dset = Datasets(
             items=idxs,
