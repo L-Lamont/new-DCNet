@@ -63,6 +63,12 @@ def parse_args():
             help='Output images or not',
             default=0
     )
+    add_arg(
+            '--lr',
+            type=float,
+            help='Output images or not',
+            default=5e-4
+    )
 
     return parser.parse_args()
 
@@ -107,17 +113,22 @@ def check_args(args):
                 format(args.seed)                                               
         ) 
 
+    if args.lr < 0:                                                           
+        raise Exception('args.lr = {} it must be positive'.                   
+                format(args.lr)                                               
+        ) 
+
 def main():
     """Main function"""
 
     # Setup
+    os.environ['TMPDIR'] = os.environ['TMPDIR_SHM']
     args = parse_args()
     check_args(args)
     config_logging()
 
     dist = setup(args)
 
-    logging.info('sanity check dist.local_rank: {}'.format(dist.local_rank))
     device = torch.device('cuda:{}'.format(str(dist.local_rank)))
     os.environ['CUDA_VISIBLE_DEVICES'] = str(dist.local_rank)
     torch.cuda.set_device(device)
@@ -151,7 +162,7 @@ def main():
     # Get dataloader
     dls = get_dataloader(args, dist, 'Model/img2msk.pkl', holdout=False)
     dls.c = len(classes)
-
+    
     # Get model
     learn = get_model(dls, dist)
 
@@ -178,12 +189,10 @@ def main():
             logging.info('Finished 4 epoch learn.fit')
 
         learn.unfreeze()
-        learn.fit_one_cycle(args.num_epochs, 5e-4, wd=1e-5)
+        learn.fit_one_cycle(args.num_epochs, args.lr, wd=1e-5)
 
         if dist.rank == 0:
             logging.info('Finished {} epoch fit_one_cycle'.format(args.num_epochs))
-
-    learn.load(os.path.join(args.data, 'Model/3g_latest_mean_IVTs'))
 
     # Evaluation on holdout dataset
     ho_dls = get_dataloader(args, dist, 'Model/holdout.pkl', holdout=True)
