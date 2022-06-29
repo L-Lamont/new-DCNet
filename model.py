@@ -4,8 +4,9 @@ from fastai.vision.all import *
 import torch
 
 def acc_nuclei(input, target):
-    mask = target > 0.1
-    acc = (input[mask] > 0.1) == (target[mask] > 0.1)
+    threshold = 0.1
+    mask = target > threshold
+    acc = (input[mask] > threshold) == (target[mask] > threshold)
 
     return acc.float().mean()
 

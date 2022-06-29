@@ -5,6 +5,5 @@ output
 logs
 local-jobscript
 localVenv
-ram-jobscript
 jobscript
 test.py

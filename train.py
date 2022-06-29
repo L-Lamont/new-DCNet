@@ -64,10 +64,32 @@ def parse_args():
             default=0
     )
     add_arg(
+            '--output-images', 
+            help='Set the output images directory'
+    )
+    add_arg(
             '--lr',
             type=float,
             help='Output images or not',
             default=5e-4
+    )
+    add_arg(
+            '--input-path',
+            help='Specify img2msk path',
+            default='Model/img2msk.pkl'
+    )
+    add_arg(
+            '--tile-size', 
+            type=int, 
+            help='Specify the tile size', 
+            default=256
+    )
+    add_arg(
+            '--high-res',
+            type=int,
+            choices=[0, 1],
+            help='Are input images high_res or not',
+            default=0
     )
 
     return parser.parse_args()
@@ -117,7 +139,26 @@ def check_args(args):
         raise Exception('args.lr = {} it must be positive'.                   
                 format(args.lr)                                               
         ) 
+    
+    if args.output_images is None:                                                     
+        raise Exception('args.output_images is not set')                               
+    if not os.path.isdir(args.output_images):                                          
+        raise Exception('args.output_images: {} is not a directory'.                   
+                format(args.output_images)                                             
+        )                                                                       
 
+    if args.input_path is None:                                                       
+        raise Exception('args.input_path is not set')                                 
+    if not os.path.exists(os.path.join(args.data, args.input_path)):                                           
+        raise Exception('args.input_path: {} does not exist'.                         
+                format(args.input_path)                                               
+        )                                                                       
+
+    if args.tile_size < 0:                                                     
+        raise Exception('args.tile_size = {} it must be positive'.             
+                format(args.tile_size)                                         
+        )                                                                       
+                                                                                
 def main():
     """Main function"""
 
@@ -139,10 +180,10 @@ def main():
     # Setup Variables
     Eosinophil = (1, 0.6,  0)  # orange                                        
     Lymphocyte = (0,   1,  0)  # green                                         
-    MacroMono = (1,   0,  1)  # red                                           
+    MacroMono = (1,   0,  0)  # red                                           
     Neutrophil = (0,   1,  1)  # cyan                                          
                                                                                     
-    TILE_SZ = 1024                                                                  
+    TILE_SZ = args.tile_size
                                                                                     
     class_map = {                                                                   
         # LBName: (idx, display, color, radius)  # average radius scenario          
@@ -160,7 +201,7 @@ def main():
         logging.info('Classes:\n{}'.format(classes))
 
     # Get dataloader
-    dls = get_dataloader(args, dist, 'Model/img2msk.pkl', holdout=False)
+    dls = get_dataloader(args, dist, args.input_path, holdout=False)
     dls.c = len(classes)
     
     # Get model

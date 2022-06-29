@@ -15,7 +15,18 @@ class DataStore():
         return TensorHeatMap(self.data[idx][1])
 
 
-class TensorHeatMap(TensorMask):                                                
+class DataStoreHighRes():
+    def __init__(self, data):
+        self.data = data
+
+    def get_x(self, idx):
+        return PILImage(self.data[1][idx])
+
+    def get_y(self, idx):
+        return TensorHeatMap(self.data[0][idx])
+
+
+class TensorHeatMap(TensorBase):                                                
     _show_args = {'interpolation': 'nearest'}                                   
                                                                                 
     def show(self, ctx=None, alpha=1.0, mask_alpha=1.0, **kwargs):              
@@ -48,10 +59,17 @@ def get_dataset(args, dist, image_path, holdout):
     with open(img2msk_path, 'rb') as f:
         img2msk = pickle.load(f)
 
-    datastore = DataStore(img2msk)
-
+    if holdout or args.high_res == 0:
+        datastore = DataStore(img2msk)
+    else:
+        datastore = DataStoreHighRes(img2msk)
+    
     if not holdout:
-        idxs = range(len(img2msk))
+        if args.high_res == 0:
+            idxs = range(len(img2msk))
+        else:
+            idxs = range(len(img2msk[0]))
+
         splits = RandomSplitter(seed=args.seed)(idxs)
         dset = Datasets(
             items=idxs,
@@ -68,6 +86,8 @@ def get_dataset(args, dist, image_path, holdout):
 
     if dist.rank == 0:
         logging.info('Built dataset (holdout={})'.format(holdout))
+        logging.info('len(dataset): {}'.format(len(dset)))
+
 
     return dset
 
@@ -102,8 +122,5 @@ def get_dataloader(args, dist, image_path, holdout=False):
 
     if dist.rank == 0:
         logging.info('Created dataloader (holdout={})'.format(holdout))
-        logging.info('Data shape')
-        logging.info('xb.shape: {}'.format(xb.shape))
-        logging.info('yb.shape: {}'.format(yb.shape))
     
     return dls

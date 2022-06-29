@@ -1,4 +1,5 @@
 import os
+import logging
 
 import cv2
 import numpy as np
@@ -86,7 +87,7 @@ def save_predictions(args, classes, inps, preds, lbls, out, ho_lbls):
         TensorMultiPoint(pred_points).show(ctx=ctx, classes=classes)   
 
         show_legend(classes)
-        plt.savefig(os.path.join(args.output, 'p_vs_t_{}.png'.format(idx)))
+        plt.savefig(os.path.join(args.output_images, 'p_vs_t_{}'.format(idx)))
 
 
 def classes2name(points, classes):
