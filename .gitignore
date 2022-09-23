@@ -7,3 +7,5 @@ local-jobscript
 localVenv
 jobscript
 test.py
+amd/amd-venv
+amd/amd-jobscript
