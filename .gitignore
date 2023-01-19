@@ -1,11 +1,6 @@
-venv
-__pycache__
+venvs
 data
 output
 logs
-local-jobscript
-localVenv
-jobscript
-test.py
-amd/amd-venv
-amd/amd-jobscript
+__pycache__
+scripts
