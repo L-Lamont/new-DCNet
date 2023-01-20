@@ -1,8 +1,7 @@
 import logging
 
-from PIL import ImageFile, Image, ImageDraw
-import numpy as np
 from fastai.vision.all import *
+
 
 class DataStore():
     def __init__(self, data):
@@ -26,15 +25,17 @@ class DataStoreHighRes():
         return TensorHeatMap(self.data[0][idx])
 
 
-class TensorHeatMap(TensorBase):                                                
-    _show_args = {'interpolation': 'nearest'}                                   
-                                                                                
-    def show(self, ctx=None, alpha=1.0, mask_alpha=1.0, **kwargs):              
-        for m, (_,_,c,_) in zip(self,classes):                                  
-            nodes = [0.0, 1.0]                                                  
-            cs = [[0,0,0,0],c]                                                  
-            cmap = LinearSegmentedColormap.from_list("cmap", list(zip(nodes, cs)))
-            show_image(m, ctx=ctx, cmap=cmap, alpha=mask_alpha, **{**self._show_args, **kwargs})
+class TensorHeatMap(TensorBase):
+    _show_args = {'interpolation': 'nearest'}
+
+    def show(self, ctx=None, alpha=1.0, mask_alpha=1.0, **kwargs):
+        for m, (_, _, c, _) in zip(self, classes):
+            nodes = [0.0, 1.0]
+            cs = [[0, 0, 0, 0], c]
+            cmap = LinearSegmentedColormap.from_list(
+                "cmap", list(zip(nodes, cs)))
+            show_image(m, ctx=ctx, cmap=cmap, alpha=mask_alpha,
+                       **{**self._show_args, **kwargs})
 
 
 def load_labels(args, dist):
@@ -63,7 +64,7 @@ def get_dataset(args, dist, image_path, holdout):
         datastore = DataStore(img2msk)
     else:
         datastore = DataStoreHighRes(img2msk)
-    
+
     if not holdout:
         if args.high_res == 0:
             idxs = range(len(img2msk))
@@ -78,7 +79,7 @@ def get_dataset(args, dist, image_path, holdout):
         )
     else:
         idxs = range(len(load_labels(args, dist)))
-    
+
         dset = Datasets(
             items=idxs,
             tfms=[[datastore.get_x, ToTensor, IntToFloatTensor], [datastore.get_y]]
@@ -87,7 +88,6 @@ def get_dataset(args, dist, image_path, holdout):
     if dist.rank == 0:
         logging.info('Built dataset (holdout={})'.format(holdout))
         logging.info('len(dataset): {}'.format(len(dset)))
-
 
     return dset
 
@@ -98,10 +98,10 @@ def get_dataloader(args, dist, image_path, holdout=False):
     if not holdout:
         batch_tfms = [
             *aug_transforms(
-                max_zoom = 1.0,
-                max_warp = 0,
-                max_rotate = 45,
-                flip_vert = True
+                max_zoom=1.0,
+                max_warp=0,
+                max_rotate=45,
+                flip_vert=True
             ),
             Normalize.from_stats(*imagenet_stats)
         ]
@@ -113,14 +113,14 @@ def get_dataloader(args, dist, image_path, holdout=False):
     dsets = get_dataset(args, dist, image_path, holdout)
 
     dls = dsets.dataloaders(
-        bs = args.batch_size,
-        after_batch = batch_tfms,
-        pin_memory = True
+        bs=args.batch_size,
+        after_batch=batch_tfms,
+        pin_memory=True
     )
 
     xb, yb = dls.one_batch()
 
     if dist.rank == 0:
         logging.info('Created dataloader (holdout={})'.format(holdout))
-    
+
     return dls

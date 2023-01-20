@@ -3,6 +3,7 @@ import logging
 from fastai.vision.all import *
 import torch
 
+
 def acc_nuclei(input, target):
     threshold = 0.1
     mask = target > threshold
@@ -27,13 +28,14 @@ def _neg_loss(pred, gt, eps=1e-12):
     loss = 0
 
     pos_loss = torch.log(pred + eps) * torch.pow(1 - pred, 2) * pos_inds
-    neg_loss = torch.log(1 - pred + eps) * torch.pow(pred, 2) * neg_weights * neg_inds
+    neg_loss = torch.log(1 - pred + eps) * \
+        torch.pow(pred, 2) * neg_weights * neg_inds
 
-    num_pos  = pos_inds.float().sum()
+    num_pos = pos_inds.float().sum()
     pos_loss = pos_loss.sum()
     neg_loss = neg_loss.sum()
 
-    if num_pos == 0: 
+    if num_pos == 0:
         loss = loss - neg_loss
     else:
         loss = loss - (pos_loss + neg_loss) / num_pos
@@ -48,18 +50,16 @@ class FocalLoss(nn.Module):
         super().__init__()
         self.neg_loss = loss
 
-
     def forward(self, out, target):
 
         bs, ch = target.shape[:2]
         sout = torch.sigmoid(out)
         loss1 = self.neg_loss(sout, target.data)
         loss1 = loss1.sum() / bs
-        
-        return loss1.to(torch.float)
-    
 
-    def activation(self, x): 
+        return loss1.to(torch.float)
+
+    def activation(self, x):
         return torch.sigmoid(x).to(torch.float)
 
 
@@ -71,11 +71,11 @@ def get_model(dls, dist):
     learner = unet_learner(
         dls,
         resnet34,
-        metrics = acc_nuclei,
-        loss_func = loss_func,
-        pretrained = True
+        metrics=acc_nuclei,
+        loss_func=loss_func,
+        pretrained=True
     )
-    
+
     if dist.rank == 0:
         logging.info('Got pretrained model')
 
