@@ -63,7 +63,7 @@ class FocalLoss(nn.Module):
         return torch.sigmoid(x).to(torch.float)
 
 
-def get_model(dls, dist):
+def get_unet(dls, dist):
     """Returns pretrained unet model"""
 
     loss_func = FocalLoss()

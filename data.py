@@ -1,6 +1,10 @@
 import logging
+import os
+import json
+import pickle
 
 from fastai.vision.all import *
+from matplotlib.colors import LinearSegmentedColormap
 
 
 class DataStore():
@@ -41,7 +45,7 @@ class TensorHeatMap(TensorBase):
 def load_labels(args, dist):
     """Loads labels"""
 
-    holdout_path = os.path.join(args.data, 'Model/holdout_lbls.txt')
+    holdout_path = os.path.join(args.data, 'holdout_lbls.txt')
 
     with open(holdout_path, 'r') as filehandle:
         holdout_lbls = json.load(filehandle)

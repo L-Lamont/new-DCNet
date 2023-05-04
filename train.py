@@ -1,5 +1,5 @@
 from visualise import save_predictions
-from model import get_model, FocalLoss
+from model import get_unet, FocalLoss
 from data import get_dataloader, load_labels
 from utils import setup, cleanup
 import time
@@ -72,7 +72,7 @@ def parse_args():
     add_arg(
         '--input-path',
         help='Specify img2msk path',
-        default='Model/img2msk.pkl'
+        default='img2msk.pkl'
     )
     add_arg(
         '--tile-size',
@@ -202,7 +202,7 @@ def main():
     dls.c = len(classes)
 
     # Get model
-    learn = get_model(dls, dist)
+    learn = get_unet(dls, dist)
 
     # Collect garbage and clear GPU cache
     gc.collect()
@@ -212,7 +212,7 @@ def main():
     learn.model = learn.model.to(device)
 
     # Starting training
-    with learn.distrib_ctx(sync_bn=False, cuda_id=int(dist.local_rank)):
+    with learn.distrib_ctx(sync_bn=False, cuda_id=int(dist.local_rank)) and learn.no_bar():
         learn.freeze()
         loss_func = FocalLoss(F.mse_loss)
         learn.fit(1, 1e-4, wd=1e-5)
@@ -234,12 +234,14 @@ def main():
                 'Finished {} epoch fit_one_cycle'.format(args.num_epochs))
 
     # Evaluation on holdout dataset
-    ho_dls = get_dataloader(args, dist, 'Model/holdout.pkl', holdout=True)
+    ho_dls = get_dataloader(args, dist, 'holdout.pkl', holdout=True)
     holdout_lbls = load_labels(args, dist)
 
     start = time.time()
 
-    inps, preds, lbls = learn.get_preds(dl=ho_dls, with_input=True)
+    with learn.no_bar():
+        inps, preds, lbls = learn.get_preds(dl=ho_dls, with_input=True)
+
     preds = preds.detach().cpu().numpy()
     lbls = lbls.detach().cpu().numpy()
     ho_out = ho_dls.decode_batch((inps, lbls), max_n=len(holdout_lbls))
